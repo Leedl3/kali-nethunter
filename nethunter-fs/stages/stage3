@@ -35,6 +35,13 @@ rm -f /usr/sbin/policy-rc.d
 rm -f /usr/sbin/invoke-rc.d
 dpkg-divert --remove --rename /usr/sbin/invoke-rc.d
 
+# Enable PHP in Apache
+a2enmod php7.0
+
+# Enable /var/www/html as default, disable mana unless we need it
+a2dissite 000-mana-toolkit.conf
+a2ensite 000-default.conf
+
 rm -f /third-stage
 EOF
 
@@ -55,7 +62,9 @@ echo "source /root/.profile" >> kali-$architecture/root/.bash_profile
 echo "cd ~/" >> kali-$architecture/root/.bash_profile
 
 # Modify Kismet log saving folder
-sed -i 's/hs/\/captures/g' kali-$architecture/etc/kismet/kismet.conf
+sed -i 's|.*\blogprefix=.*|logprefix=/captures/kismet/|g' kali-$architecture/etc/kismet/kismet.conf
+sed -i 's|.*\bncsource=wlan0|ncsource=wlan1|g' kali-$architecture/etc/kismet/kismet.conf
+sed -i 's|.*\bgpshost=.*|gpshost=127.0.0.1:2947|g' kali-$architecture/etc/kismet/kismet.conf
 
 # Modify SSHD to allow password logins which is a security risk 
 # if the user doesn't change their password
@@ -103,3 +112,6 @@ LANG=C chroot kali-$architecture cp /etc/skel/.bashrc /root/.bashrc
 # Copy necessary scripts and make executable (/dev/null to supress error msgs for following symlinks)
 LANG=C chroot kali-$architecture chmod 755 /usr/bin/* 2> /dev/null
 LANG=C chroot kali-$architecture chmod 755 /usr/share/mana-toolkit/run-mana/*.sh 2> /dev/null
+
+# Minor fix for mana-toolkit which made changes in update.  We need to mirror fixes.
+sed -i 's/dhcpd -cf \/etc\/mana-toolkit\/dhcpd\.conf \$phy/dnsmasq -z -C \/etc\/mana-toolkit\/dnsmasq-dhcpd\.conf -i \$phy -I lo/' kali-$architecture/usr/share/mana-toolkit/run-mana/*
